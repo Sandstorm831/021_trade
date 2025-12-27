@@ -2,22 +2,25 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
 
-	"github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/Sandstorm831/021_trade/internal/config"
+	"github.com/Sandstorm831/021_trade/internal/database"
+	"github.com/gin-gonic/gin"
 )
 
+func init() {
+	config.LoadEnvVariables()
+	database.ConnectToDB()
+}
+
 func main() {
-	if err := godotenv.Load(); err != nil {
-		log.Fatal("Error loading .env file")
-	}
+
 	fmt.Println("Hello World")
-	db, err := gorm.Open(postgres.Open(os.Getenv("DB_DSN")), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-	fmt.Println(db)
+	router := gin.Default()
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	router.Run() // listens on 0.0.0.0:8080 by default
 }
