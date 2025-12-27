@@ -1,17 +1,12 @@
 package handlers
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/Sandstorm831/021_trade/internal/database"
 	"github.com/Sandstorm831/021_trade/internal/models"
 	"github.com/gin-gonic/gin"
 )
-
-type UserName struct {
-	Name string
-}
 
 func RandomString(length int) string {
 	letters := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -23,14 +18,15 @@ func RandomString(length int) string {
 }
 
 func CreateUser(c *gin.Context) {
-	var userName UserName
+	var userName struct {
+		Name string
+	}
 	if err := c.ShouldBindJSON(&userName); err != nil {
 		c.JSON(400, gin.H{
 			"message": "Some error occurred",
 		})
 		return
 	}
-	fmt.Println(userName)
 	if userName.Name == "" {
 		userName.Name = RandomString(8)
 	}
