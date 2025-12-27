@@ -5,6 +5,7 @@ import (
 
 	"github.com/Sandstorm831/021_trade/internal/config"
 	"github.com/Sandstorm831/021_trade/internal/database"
+	"github.com/Sandstorm831/021_trade/internal/handlers"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,10 +19,6 @@ func main() {
 
 	fmt.Println("Hello World")
 	router := gin.Default()
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
+	router.GET("/", handlers.CreateUser)
 	router.Run() // listens on 0.0.0.0:8080 by default
 }
