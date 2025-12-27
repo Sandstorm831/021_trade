@@ -26,5 +26,6 @@ func main() {
 	})
 	router.POST("/create-user", handlers.CreateUser)
 	router.POST("/create-stock", handlers.CreateStock)
+	router.POST("/reward", handlers.RecordReward)
 	router.Run() // listens on 0.0.0.0:8080 by default
 }
