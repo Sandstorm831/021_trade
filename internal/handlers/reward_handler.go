@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/Sandstorm831/021_trade/internal/database"
@@ -8,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 func ParseTimestamp(s string) (time.Time, error) {
@@ -57,10 +59,6 @@ func RecordReward(c *gin.Context) {
 	} else {
 		rewardTime = pt
 	}
-	if rewardRecord.RewardedAt == "" {
-		timeLayout := "2006-01-02 15:04:05.999999+00:00"
-		rewardRecord.RewardedAt = time.Now().UTC().Format(timeLayout)
-	}
 	reward := models.Reward{
 		UserID:         userID,
 		StockSymbol:    rewardRecord.StockSymbol,
@@ -68,15 +66,72 @@ func RecordReward(c *gin.Context) {
 		IdempotencyKey: rewardRecord.IdempotencyKey,
 		RewardedAt:     rewardTime,
 	}
-	res := database.DB.Create(&reward)
-	if res.Error != nil {
-		c.JSON(400, gin.H{
-			"message": "Some error occurred while recording reward",
-		})
-		return
-	}
+	database.DB.Transaction(func(tx *gorm.DB) error {
 
-	c.JSON(200, gin.H{
-		"Reward": reward,
+		if err := tx.Create(&reward).Error; err != nil {
+			c.JSON(400, gin.H{
+				"message": "Some error occurred while recording reward",
+			})
+			return err
+		}
+		var latestPrice models.StockPrice
+		priceRes := tx.Where("stock_symbol = ?", rewardRecord.StockSymbol).Order("captured_at desc").First(&latestPrice)
+		if priceRes.Error != nil {
+			c.JSON(400, gin.H{
+				"message": "Price for the Stock is not found",
+			})
+			return priceRes.Error
+		}
+		stockCostINR := rewardRecord.Quantity.Mul(latestPrice.PriceINR)
+		feeINR := decimal.NewFromFloat(4.0 + rand.Float64()*10)
+		totalCompanyCost := stockCostINR.Add(feeINR)
+		ledgerEntryStock := models.LedgerEntry{
+			RewardID:    reward.ID,
+			StockSymbol: &rewardRecord.StockSymbol,
+			AccountType: "USER_STOCK",
+			Debit:       rewardRecord.Quantity,
+			Currency:    "UNIT",
+			CreatedAt:   rewardTime,
+		}
+		ledgerEntryCash := models.LedgerEntry{
+			RewardID:    reward.ID,
+			AccountType: "COMPANY_CASH",
+			Credit:      totalCompanyCost,
+			Currency:    "INR",
+			CreatedAt:   rewardTime,
+		}
+		ledgerEntryFee := models.LedgerEntry{
+			RewardID:    reward.ID,
+			AccountType: "FEES_EXPENSE",
+			Debit:       feeINR,
+			Currency:    "INR",
+			CreatedAt:   rewardTime,
+		}
+		if err := tx.Create(&ledgerEntryStock).Error; err != nil {
+			c.JSON(400, gin.H{
+				"message": "Some error occurred while recording stock ledger entry",
+			})
+			return err
+		}
+		if err := tx.Create(&ledgerEntryCash).Error; err != nil {
+			c.JSON(400, gin.H{
+				"message": "Some error occurred while recording company cash ledger entry",
+			})
+			return err
+		}
+		if err := tx.Create(&ledgerEntryFee).Error; err != nil {
+			c.JSON(400, gin.H{
+				"message": "Some error occurred while recording fee expense ledger entry",
+			})
+			return err
+		}
+		c.JSON(200, gin.H{
+			"Reward":             reward,
+			"stockLedgerEntryID": ledgerEntryStock.ID,
+			"cashLedgerEntryID":  ledgerEntryCash.ID,
+			"feeLedgerEntryID":   ledgerEntryFee.ID,
+		})
+		return nil
 	})
+
 }
