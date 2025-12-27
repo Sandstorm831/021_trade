@@ -11,6 +11,7 @@ import (
 func init() {
 	config.LoadEnvVariables()
 	database.ConnectToDB()
+	database.MigrateToDB()
 }
 
 func main() {

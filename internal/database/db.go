@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Sandstorm831/021_trade/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -18,4 +19,8 @@ func ConnectToDB() {
 	}
 	fmt.Println("Connected to DB")
 
+}
+
+func MigrateToDB() {
+	DB.AutoMigrate(&models.User{})
 }
