@@ -6,6 +6,7 @@ import (
 	"github.com/Sandstorm831/021_trade/internal/config"
 	"github.com/Sandstorm831/021_trade/internal/database"
 	"github.com/Sandstorm831/021_trade/internal/handlers"
+	"github.com/Sandstorm831/021_trade/internal/services"
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,6 +14,7 @@ func init() {
 	config.LoadEnvVariables()
 	database.ConnectToDB()
 	database.MigrateToDB()
+	services.StartPriceWorker()
 }
 
 func main() {
