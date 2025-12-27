@@ -22,5 +22,5 @@ func ConnectToDB() {
 }
 
 func MigrateToDB() {
-	DB.AutoMigrate(&models.User{}, &models.Stock{}, &models.StockPrice{}, &models.Reward{})
+	DB.AutoMigrate(&models.User{}, &models.Stock{}, &models.StockPrice{}, &models.Reward{}, models.LedgerEntry{})
 }
