@@ -19,6 +19,12 @@ func main() {
 
 	fmt.Println("Hello World")
 	router := gin.Default()
-	router.GET("/", handlers.CreateUser)
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	router.POST("/create-user", handlers.CreateUser)
+	router.POST("/create-stock", handlers.CreateStock)
 	router.Run() // listens on 0.0.0.0:8080 by default
 }
