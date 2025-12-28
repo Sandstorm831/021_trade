@@ -35,10 +35,17 @@ These instructions will get you a copy of the project up and running on your loc
 
 > Arrange a PostgreSQL Database and add the credential in the `.env` file in the format mentioned above. Database can be hosted, local or docker based.
 
-To run the application, execute the following command from the root of the project:
+To build and run the application, execute the following command from the root of the project:
 
 ```sh
-go run cmd/server/main.go
+$ go build -o 021_trade ./cmd/server/
+
+$ ./021_trade
+```
+
+to run the application directly
+```sh
+$ go run cmd/server/main.go
 ```
 
 The server will start on `http://localhost:8080`

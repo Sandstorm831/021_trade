@@ -1,0 +1,181 @@
+{
+	"info": {
+		"_postman_id": "29b231f4-e26f-47df-9b20-122de1742f81",
+		"name": "021_Trade",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39113512"
+	},
+	"item": [
+		{
+			"name": "create-user",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Name\": \"\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{baseURL}}/create-user",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"create-user"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "create-stock",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Name\": \"Apple\",\n    \"Symbol\": \"AAPL\",\n    \"Price\": 243.241\n}"
+				},
+				"url": {
+					"raw": "{{baseURL}}/create-stock",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"create-stock"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "record-reward",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"UserID\": \"9bbf1625-e024-4663-9fc8-47440d1620c0\",\n\t\"StockSymbol\": \"INF\",\n\t\"Quantity\": \"25\",\n\t\"IdempotencyKey\": \"faisass\",\n\t\"RewardedAt\": \"2025-12-25 13:59:04.093438+05:30\"\n}"
+				},
+				"url": {
+					"raw": "{{baseURL}}/reward",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"reward"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "today_user_rewards",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/today-stocks/:userId",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"today-stocks",
+						":userId"
+					],
+					"variable": [
+						{
+							"key": "userId",
+							"value": "9bbf1625-e024-4663-9fc8-47440d1620c0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "get-historical-valuation",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/historical-inr/:userId",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"historical-inr",
+						":userId"
+					],
+					"variable": [
+						{
+							"key": "userId",
+							"value": "9bbf1625-e024-4663-9fc8-47440d1620c0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "stats-user-portfolio",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/stats/:userId",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"stats",
+						":userId"
+					],
+					"variable": [
+						{
+							"key": "userId",
+							"value": "9bbf1625-e024-4663-9fc8-47440d1620c0"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "stats-user-portfolio Copy",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseURL}}/portfolio/:userId",
+					"host": [
+						"{{baseURL}}"
+					],
+					"path": [
+						"portfolio",
+						":userId"
+					],
+					"variable": [
+						{
+							"key": "userId",
+							"value": "9bbf1625-e024-4663-9fc8-47440d1620c0"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseURL",
+			"value": "http://localhost:8080",
+			"type": "default"
+		}
+	]
+}
