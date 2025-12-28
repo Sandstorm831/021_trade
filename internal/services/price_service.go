@@ -19,6 +19,7 @@ func StartPriceWorker() {
 			logrus.Info("Starting stock prices update")
 			updateAllPrices()
 			logrus.Info("Successfully updated stock prices")
+			logrus.Info("Next update will happen in 1 hour")
 		}
 	}()
 }

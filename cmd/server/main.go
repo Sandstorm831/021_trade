@@ -1,13 +1,12 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/Sandstorm831/021_trade/internal/config"
 	"github.com/Sandstorm831/021_trade/internal/database"
 	"github.com/Sandstorm831/021_trade/internal/handlers"
 	"github.com/Sandstorm831/021_trade/internal/services"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
@@ -18,14 +17,8 @@ func init() {
 }
 
 func main() {
-
-	fmt.Println("Hello World")
+	logrus.Info("Starting Gin Router")
 	router := gin.Default()
-	router.GET("/", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
 	router.POST("/create-user", handlers.CreateUser)
 	router.POST("/create-stock", handlers.CreateStock)
 	router.POST("/reward", handlers.RecordReward)
