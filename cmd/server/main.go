@@ -31,5 +31,6 @@ func main() {
 	router.POST("/reward", handlers.RecordReward)
 	router.GET("/today-stocks/:userId", handlers.GetTodayRewards)
 	router.GET("/historical-inr/:userId", handlers.GetHistoricalINR)
+	router.GET("/stats/:userId", handlers.GetUserStats)
 	router.Run() // listens on 0.0.0.0:8080 by default
 }
