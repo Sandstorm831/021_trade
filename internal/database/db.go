@@ -1,10 +1,10 @@
 package database
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/Sandstorm831/021_trade/internal/models"
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -17,10 +17,12 @@ func ConnectToDB() {
 	if err != nil {
 		panic("failed to connect database")
 	}
-	fmt.Println("Connected to DB")
+	logrus.Info("Successfully connected to DB")
 
 }
 
 func MigrateToDB() {
+	logrus.Info("Starting migrations")
 	DB.AutoMigrate(&models.User{}, &models.Stock{}, &models.StockPrice{}, &models.Reward{}, models.LedgerEntry{})
+	logrus.Info("Applied migration successuflly")
 }
