@@ -159,7 +159,7 @@ func GetPortfolio(c *gin.Context) {
 	logrus.Infof("Successfully fetched portfolio for user %s. Total portfolio value: %s", userID, totalPortfolioValue)
 	// Final Response
 	c.JSON(http.StatusOK, gin.H{
-		"Portfoli":   portfolio,
+		"Portfolio":  portfolio,
 		"TotalValue": totalPortfolioValue,
 	})
 }
