@@ -1,16 +1,17 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/Sandstorm831/021_trade/internal/database"
 	"github.com/gin-gonic/gin"
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 )
 
 func GetUserStats(c *gin.Context) {
+	logrus.Info("Entering GetUserStats handler.")
 	userID := c.Param("userId")
 
 	type StockShares struct {
@@ -31,12 +32,13 @@ func GetUserStats(c *gin.Context) {
 		WHERE user_id = ? AND DATE(rewarded_at) >= DATE(?)
 		GROUP BY stock_symbol
 	`, userID, time.Now()).Scan(&todayRewards).Error; err != nil {
+		logrus.WithField("userID", userID).WithError(err).Error("Some error occurred while fetching today's stats.")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Some error occurred while fetching today's stats",
 		})
 		return
 	}
-	fmt.Println(todayRewards)
+	logrus.Debugf("Today's rewards for user %s: %v", userID, todayRewards)
 
 	type Holding struct {
 		Symbol string
@@ -49,12 +51,14 @@ func GetUserStats(c *gin.Context) {
     	WHERE user_id = ?
     	GROUP BY stock_symbol
 	`, userID).Scan(&allHoldings).Error; err != nil {
+		logrus.WithField("userID", userID).WithError(err).Error("Some error occurred while fetching stock holdings for user stats.")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Some error occurred while fetching stock holdings",
 		})
 		return
 	}
-	fmt.Println(allHoldings)
+	logrus.Debugf("All holdings for user %s: %v", userID, allHoldings)
+
 	type LatestPrice struct {
 		StockSymbol string
 		PriceINR    decimal.Decimal
@@ -80,6 +84,7 @@ func GetUserStats(c *gin.Context) {
 		}
 	}
 
+	logrus.Infof("Successfully fetched user stats for user %s. Total portfolio value: %s", userID, totalPortfolioValue)
 	// Final Response
 	c.JSON(http.StatusOK, StatsResponse{
 		TodayRewards: todayRewards,
@@ -88,6 +93,7 @@ func GetUserStats(c *gin.Context) {
 }
 
 func GetPortfolio(c *gin.Context) {
+	logrus.Info("Entering GetPortfolio handler.")
 	userID := c.Param("userId")
 
 	type PortfolioItem struct {
@@ -109,13 +115,15 @@ func GetPortfolio(c *gin.Context) {
     	WHERE user_id = ?
     	GROUP BY stock_symbol
 	`, userID).Scan(&allHoldings).Error; err != nil {
+		logrus.WithField("userID", userID).WithError(err).Error("Some error occurred while fetching stock holdings for portfolio.")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Some error occurred while fetching stock holdings",
 		})
 		return
 	}
 
-	fmt.Println(allHoldings)
+	logrus.Debugf("All holdings for user %s: %v", userID, allHoldings)
+
 	type LatestPrice struct {
 		StockSymbol string
 		PriceINR    decimal.Decimal
@@ -148,6 +156,7 @@ func GetPortfolio(c *gin.Context) {
 		}
 	}
 
+	logrus.Infof("Successfully fetched portfolio for user %s. Total portfolio value: %s", userID, totalPortfolioValue)
 	// Final Response
 	c.JSON(http.StatusOK, gin.H{
 		"Portfoli":   portfolio,
