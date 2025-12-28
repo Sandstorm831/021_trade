@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"math/rand"
+	"net/http"
 	"time"
 
 	"github.com/Sandstorm831/021_trade/internal/database"
@@ -134,4 +135,18 @@ func RecordReward(c *gin.Context) {
 		return nil
 	})
 
+}
+
+func GetTodayRewards(c *gin.Context) {
+	userId := c.Param("userId")
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	var todayRewards []models.Reward
+	if err := database.DB.Where("user_id = ? AND rewarded_at >= ?", userId, todayStart).Order("rewarded_at DESC").Find(&todayRewards).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": "Some error occurred while fetching the rewards",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, todayRewards)
 }
