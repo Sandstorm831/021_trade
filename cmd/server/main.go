@@ -32,5 +32,6 @@ func main() {
 	router.GET("/today-stocks/:userId", handlers.GetTodayRewards)
 	router.GET("/historical-inr/:userId", handlers.GetHistoricalINR)
 	router.GET("/stats/:userId", handlers.GetUserStats)
+	router.GET("/portfolio/:userId", handlers.GetPortfolio)
 	router.Run() // listens on 0.0.0.0:8080 by default
 }
