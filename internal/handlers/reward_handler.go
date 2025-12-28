@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -30,6 +30,7 @@ func ParseTimestamp(s string) (time.Time, error) {
 }
 
 func RecordReward(c *gin.Context) {
+	logrus.Info("Entering RecordReward handler.")
 	var rewardRecord struct {
 		UserID         string
 		StockSymbol    string
@@ -38,6 +39,7 @@ func RecordReward(c *gin.Context) {
 		RewardedAt     string
 	}
 	if err := c.ShouldBindBodyWithJSON(&rewardRecord); err != nil {
+		logrus.WithError(err).Error("Failed to bind JSON for reward record.")
 		c.JSON(400, gin.H{
 			"message": "Some error occurred",
 		})
@@ -46,6 +48,7 @@ func RecordReward(c *gin.Context) {
 	var userID uuid.UUID
 	var rewardTime time.Time
 	if id, err := uuid.Parse(rewardRecord.UserID); err != nil {
+		logrus.WithField("userID", rewardRecord.UserID).WithError(err).Error("Invalid User ID provided for reward record.")
 		c.JSON(400, gin.H{
 			"message": "User Id is invalid",
 		})
@@ -54,6 +57,7 @@ func RecordReward(c *gin.Context) {
 		userID = id
 	}
 	if pt, err := ParseTimestamp(rewardRecord.RewardedAt); err != nil {
+		logrus.WithField("rewardedAt", rewardRecord.RewardedAt).WithError(err).Error("Invalid timestamp format for reward record.")
 		c.JSON(400, gin.H{
 			"message": "Time formatting is not right",
 		})
@@ -68,9 +72,22 @@ func RecordReward(c *gin.Context) {
 		IdempotencyKey: rewardRecord.IdempotencyKey,
 		RewardedAt:     rewardTime,
 	}
+	logrus.WithFields(logrus.Fields{
+		"userID":         reward.UserID,
+		"stockSymbol":    reward.StockSymbol,
+		"quantity":       reward.Quantity,
+		"idempotencyKey": reward.IdempotencyKey,
+		"rewardedAt":     reward.RewardedAt,
+	}).Info("Attempting to record new reward.")
+
 	database.DB.Transaction(func(tx *gorm.DB) error {
 
 		if err := tx.Create(&reward).Error; err != nil {
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"userID":         reward.UserID,
+				"stockSymbol":    reward.StockSymbol,
+				"idempotencyKey": reward.IdempotencyKey,
+			}).Error("Some error occurred while recording reward in database.")
 			c.JSON(400, gin.H{
 				"message": "Some error occurred while recording reward",
 			})
@@ -79,6 +96,7 @@ func RecordReward(c *gin.Context) {
 		var latestPrice models.StockPrice
 		priceRes := tx.Where("stock_symbol = ?", rewardRecord.StockSymbol).Order("captured_at desc").First(&latestPrice)
 		if priceRes.Error != nil {
+			logrus.WithError(priceRes.Error).WithField("stockSymbol", rewardRecord.StockSymbol).Error("Price for the Stock is not found.")
 			c.JSON(400, gin.H{
 				"message": "Price for the Stock is not found",
 			})
@@ -110,23 +128,35 @@ func RecordReward(c *gin.Context) {
 			CreatedAt:   rewardTime,
 		}
 		if err := tx.Create(&ledgerEntryStock).Error; err != nil {
+			logrus.WithError(err).WithFields(logrus.Fields{
+				"rewardID":    reward.ID,
+				"stockSymbol": rewardRecord.StockSymbol,
+			}).Error("Some error occurred while recording stock ledger entry.")
 			c.JSON(400, gin.H{
 				"message": "Some error occurred while recording stock ledger entry",
 			})
 			return err
 		}
 		if err := tx.Create(&ledgerEntryCash).Error; err != nil {
+			logrus.WithError(err).WithField("rewardID", reward.ID).Error("Some error occurred while recording company cash ledger entry.")
 			c.JSON(400, gin.H{
 				"message": "Some error occurred while recording company cash ledger entry",
 			})
 			return err
 		}
 		if err := tx.Create(&ledgerEntryFee).Error; err != nil {
+			logrus.WithError(err).WithField("rewardID", reward.ID).Error("Some error occurred while recording fee expense ledger entry.")
 			c.JSON(400, gin.H{
 				"message": "Some error occurred while recording fee expense ledger entry",
 			})
 			return err
 		}
+		logrus.WithFields(logrus.Fields{
+			"rewardID":           reward.ID,
+			"stockLedgerEntryID": ledgerEntryStock.ID,
+			"cashLedgerEntryID":  ledgerEntryCash.ID,
+			"feeLedgerEntryID":   ledgerEntryFee.ID,
+		}).Info("Reward and associated ledger entries recorded successfully.")
 		c.JSON(200, gin.H{
 			"Reward":             reward,
 			"stockLedgerEntryID": ledgerEntryStock.ID,
@@ -139,25 +169,30 @@ func RecordReward(c *gin.Context) {
 }
 
 func GetTodayRewards(c *gin.Context) {
+	logrus.Info("Entering GetTodayRewards handler.")
 	userId := c.Param("userId")
 	now := time.Now()
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	var todayRewards []models.Reward
 	if err := database.DB.Where("user_id = ? AND rewarded_at >= ?", userId, todayStart).Order("rewarded_at DESC").Find(&todayRewards).Error; err != nil {
+		logrus.WithField("userID", userId).WithError(err).Error("Some error occurred while fetching today's rewards.")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Some error occurred while fetching the rewards",
 		})
 		return
 	}
+	logrus.Infof("Successfully fetched today's rewards for user %s. Found %d rewards.", userId, len(todayRewards))
 	c.JSON(http.StatusOK, todayRewards)
 }
 
 func GetHistoricalINR(c *gin.Context) {
+	logrus.Info("Entering GetHistoricalINR handler.")
 	userID := c.Param("userId")
 	const layout = "2006-01-02"
 	// Finding rewards
 	var rewards []models.Reward
 	if err := database.DB.Where("user_id = ?", userID).Order("rewarded_at asc").Find(&rewards).Error; err != nil {
+		logrus.WithField("userID", userID).WithError(err).Error("Some error occurred while fetching historical rewards.")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Some error occurred while fetching the rewards",
 		})
@@ -165,6 +200,7 @@ func GetHistoricalINR(c *gin.Context) {
 	}
 
 	if len(rewards) == 0 {
+		logrus.WithField("userID", userID).Info("No historical rewards found for user.")
 		c.JSON(http.StatusOK, []interface{}{})
 		return
 	}
@@ -183,13 +219,14 @@ func GetHistoricalINR(c *gin.Context) {
 	WHERE captured_at < CURRENT_DATE
 	ORDER BY DATE(captured_at), stock_symbol, captured_at DESC
 	`).Find(&dailyClosingPrice).Error; err != nil {
+		logrus.WithError(err).Error("Some error occurred while getting daily closing prices.")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Some error occurred while getting prices",
 		})
 		return
 	}
 
-	fmt.Println(dailyClosingPrice)
+	logrus.Debugf("Daily closing prices: %v", dailyClosingPrice)
 
 	firstDate := rewards[0].RewardedAt
 	var closingPriceBeforeFirstDate []DailyPrice
@@ -200,12 +237,13 @@ func GetHistoricalINR(c *gin.Context) {
 	WHERE captured_at < ?
 	ORDER BY stock_symbol, captured_at DESC
 	`, firstDate.Format(layout)).Find(&closingPriceBeforeFirstDate).Error; err != nil {
+		logrus.WithError(err).Error("Some error occurred while getting prices before first date.")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "Some error occurred while getting prices before first date",
 		})
 		return
 	}
-	fmt.Printf("Before first date: %v\n", closingPriceBeforeFirstDate)
+	logrus.Debugf("Closing prices before first date: %v", closingPriceBeforeFirstDate)
 	type HistoricalINR struct {
 		Date  string
 		Value decimal.Decimal
@@ -281,10 +319,11 @@ func GetHistoricalINR(c *gin.Context) {
 		for s_sym, s_qty := range holdings[dateStr] {
 			s_price := priceReg[dateStr][s_sym]
 			currDayVal = currDayVal.Add(s_qty.Mul(s_price))
-			fmt.Printf("Date: %v, s_sym: %v, s_price: %v, s_qty: %v, CurrVal: %v\n", dateStr, s_sym, s_price, s_qty, currDayVal)
+			logrus.Debugf("Date: %v, s_sym: %v, s_price: %v, s_qty: %v, CurrVal: %v", dateStr, s_sym, s_price, s_qty, currDayVal)
 		}
 		historicalVal = append(historicalVal, HistoricalINR{Date: dateStr, Value: currDayVal})
 	}
+	logrus.Infof("Successfully fetched historical INR for user %s.", userID)
 	c.JSON(http.StatusOK, historicalVal)
 
 }
